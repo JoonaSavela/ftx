@@ -96,6 +96,30 @@ class FtxClient:
             ** ({'clientId': client_order_id} if client_order_id is not None else {}),
         })
 
+    # Only works for market orders
+    def modify_conditional_order(
+        self,
+        order_id: str,
+        order_type: Optional[str] = None,
+        triggerPrice: Optional[float] = None,
+        trailValue: Optional[float] = None,
+        size: Optional[float] = None,
+    ) -> dict:
+        assert order_type in ('stop', 'takeProfit', 'trailingStop')
+        if order_type == 'trailingStop':
+            assert (trailValue is not None) or (size is not None), \
+                'trailingStop must modify trailValue or size of order'
+        else:
+            assert (triggerPrice is not None) or (size is not None), \
+                'Other than trailingStop must modify triggerPrice or size of order'
+
+        path = f'conditional_orders/{order_id}/modify'
+        return self._post(path, {
+            **({'size': size} if size is not None else {}),
+            **({'triggerPrice': triggerPrice} if triggerPrice is not None else {}),
+            **({'trailValue': trailValue} if trailValue is not None else {}),
+        })
+
     def get_conditional_orders(self, market: str = None) -> List[dict]:
         return self._get(f'conditional_orders', {'market': market})
 
@@ -116,28 +140,28 @@ class FtxClient:
     def place_conditional_order(
         self, market: str, side: str, size: float, order_type: str = 'stop',
         limit_price: float = None, reduce_only: bool = False, cancel: bool = True,
-        trigger_price: float = None, trail_value: float = None
+        triggerPrice: float = None, trailValue: float = None
     ) -> dict:
         """
-        To send a Stop Market order, set order_type='stop' and supply a trigger_price
+        To send a Stop Market order, set order_type='stop' and supply a triggerPrice
         To send a Stop Limit order, also supply a limit_price
-        To send a Take Profit Market order, set order_type='trailingStop' and supply a trigger_price
-        To send a Trailing Stop order, set order_type='trailingStop' and supply a trail_value
+        To send a Take Profit Market order, set order_type='trailingStop' and supply a triggerPrice
+        To send a Trailing Stop order, set order_type='trailingStop' and supply a trailValue
         """
         assert order_type in ('stop', 'takeProfit', 'trailingStop')
-        assert order_type not in ('stop', 'takeProfit') or trigger_price is not None, \
+        assert order_type not in ('stop', 'takeProfit') or triggerPrice is not None, \
             'Need trigger prices for stop losses and take profits'
-        assert order_type not in ('trailingStop',) or (trigger_price is None and trail_value is not None), \
+        assert order_type not in ('trailingStop',) or (triggerPrice is None and trailValue is not None), \
             'Trailing stops need a trail value and cannot take a trigger price'
 
         if order_type == 'trailingStop':
             return self._post('conditional_orders',
-                              {'market': market, 'side': side, 'trailValue': trail_value,
+                              {'market': market, 'side': side, 'trailValue': trailValue,
                                'size': size, 'reduceOnly': reduce_only, 'type': order_type,
                                'cancelLimitOnTrigger': cancel})
         else:
             return self._post('conditional_orders',
-                          {'market': market, 'side': side, 'triggerPrice': trigger_price,
+                          {'market': market, 'side': side, 'triggerPrice': triggerPrice,
                            'size': size, 'reduceOnly': reduce_only, 'type': order_type,
                            'cancelLimitOnTrigger': cancel, 'orderPrice': limit_price})
 
