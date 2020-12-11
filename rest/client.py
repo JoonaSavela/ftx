@@ -73,10 +73,10 @@ class FtxClient:
 
     def get_open_orders(self, market: str = None) -> List[dict]:
         return self._get(f'orders', {'market': market})
-    
+
     def get_order_history(self, market: str = None, side: str = None, order_type: str = None, start_time: float = None, end_time: float = None) -> List[dict]:
         return self._get(f'orders/history', {'market': market, 'side': side, 'orderType': order_type, 'start_time': start_time, 'end_time': end_time})
-        
+
     def get_conditional_order_history(self, market: str = None, side: str = None, type: str = None, order_type: str = None, start_time: float = None, end_time: float = None) -> List[dict]:
         return self._get(f'conditional_orders/history', {'market': market, 'side': side, 'type': type, 'orderType': order_type, 'start_time': start_time, 'end_time': end_time})
 
@@ -114,36 +114,32 @@ class FtxClient:
                                      })
 
     def place_conditional_order(
-        self, market: str, side: str, size: float, type: str = 'stop',
+        self, market: str, side: str, size: float, order_type: str = 'stop',
         limit_price: float = None, reduce_only: bool = False, cancel: bool = True,
         trigger_price: float = None, trail_value: float = None
     ) -> dict:
         """
-        To send a Stop Market order, set type='stop' and supply a trigger_price
+        To send a Stop Market order, set order_type='stop' and supply a trigger_price
         To send a Stop Limit order, also supply a limit_price
-        To send a Take Profit Market order, set type='trailing_stop' and supply a trigger_price
-        To send a Trailing Stop order, set type='trailing_stop' and supply a trail_value
+        To send a Take Profit Market order, set order_type='trailingStop' and supply a trigger_price
+        To send a Trailing Stop order, set order_type='trailingStop' and supply a trail_value
         """
-        assert type in ('stop', 'take_profit', 'trailing_stop')
-        assert type not in ('stop', 'take_profit') or trigger_price is not None, \
+        assert order_type in ('stop', 'takeProfit', 'trailingStop')
+        assert order_type not in ('stop', 'takeProfit') or trigger_price is not None, \
             'Need trigger prices for stop losses and take profits'
-        assert type not in ('trailing_stop',) or (trigger_price is None and trail_value is not None), \
+        assert order_type not in ('trailingStop',) or (trigger_price is None and trail_value is not None), \
             'Trailing stops need a trail value and cannot take a trigger price'
 
-        return self._post('conditional_orders',
+        if order_type == 'trailingStop':
+            return self._post('conditional_orders',
+                              {'market': market, 'side': side, 'trailValue': trail_value,
+                               'size': size, 'reduceOnly': reduce_only, 'type': order_type,
+                               'cancelLimitOnTrigger': cancel})
+        else:
+            return self._post('conditional_orders',
                           {'market': market, 'side': side, 'triggerPrice': trigger_price,
-                           'size': size, 'reduceOnly': reduce_only, 'type': 'stop',
+                           'size': size, 'reduceOnly': reduce_only, 'type': order_type,
                            'cancelLimitOnTrigger': cancel, 'orderPrice': limit_price})
-
-    def cancel_order(self, order_id: str) -> dict:
-        return self._delete(f'orders/{order_id}')
-
-    def cancel_orders(self, market_name: str = None, conditional_orders: bool = False,
-                      limit_orders: bool = False) -> dict:
-        return self._delete(f'orders', {'market': market_name,
-                                        'conditionalOrdersOnly': conditional_orders,
-                                        'limitOrdersOnly': limit_orders,
-                                        })
 
     def get_fills(self) -> List[dict]:
         return self._get(f'fills')
