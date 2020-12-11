@@ -145,7 +145,7 @@ class FtxClient:
         """
         To send a Stop Market order, set order_type='stop' and supply a triggerPrice
         To send a Stop Limit order, also supply a limit_price
-        To send a Take Profit Market order, set order_type='trailingStop' and supply a triggerPrice
+        To send a Take Profit Market order, set order_type='takeProfit' and supply a triggerPrice
         To send a Trailing Stop order, set order_type='trailingStop' and supply a trailValue
         """
         assert order_type in ('stop', 'takeProfit', 'trailingStop')
@@ -164,6 +164,17 @@ class FtxClient:
                           {'market': market, 'side': side, 'triggerPrice': triggerPrice,
                            'size': size, 'reduceOnly': reduce_only, 'type': order_type,
                            'cancelLimitOnTrigger': cancel, 'orderPrice': limit_price})
+
+
+    def cancel_order(self, order_id: str) -> dict:
+        return self._delete(f'orders/{order_id}')
+
+    def cancel_orders(self, market_name: str = None, conditional_orders: bool = False,
+                      limit_orders: bool = False) -> dict:
+        return self._delete(f'orders', {'market': market_name,
+                                        'conditionalOrdersOnly': conditional_orders,
+                                        'limitOrdersOnly': limit_orders,
+                                        })
 
     def get_fills(self) -> List[dict]:
         return self._get(f'fills')
