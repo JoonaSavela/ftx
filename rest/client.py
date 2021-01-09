@@ -80,6 +80,10 @@ class FtxClient:
     def get_conditional_order_history(self, market: str = None, side: str = None, type: str = None, order_type: str = None, start_time: float = None, end_time: float = None) -> List[dict]:
         return self._get(f'conditional_orders/history', {'market': market, 'side': side, 'type': type, 'orderType': order_type, 'start_time': start_time, 'end_time': end_time})
 
+    def transfer_to_subaccount(self, coin: str, size: float, source: Optional[str] = None, destination: Optional[str] = None) -> Dict:
+        return self._post(f'subaccounts/transfer', {'coin': coin, 'size': size, 'source': source, 'destination': destination})
+
+
     def modify_order(
         self, existing_order_id: Optional[str] = None,
         existing_client_order_id: Optional[str] = None, price: Optional[float] = None,
