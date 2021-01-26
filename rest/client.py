@@ -83,6 +83,18 @@ class FtxClient:
     def transfer_to_subaccount(self, coin: str, size: float, source: Optional[str] = None, destination: Optional[str] = None) -> Dict:
         return self._post(f'subaccounts/transfer', {'coin': coin, 'size': size, 'source': source, 'destination': destination})
 
+    def get_historical_prices(
+        self, market: str, resolution: float, limit: Optional[float] = None,
+        start_time: Optional[float] = None, end_time: Optional[float] = None
+    ) -> List[dict]:
+        path = f'markets/{market}/candles'
+        return self._get(path, {
+            'resolution': resolution,
+            'limit': limit,
+            'start_time': start_time,
+            'end_time': end_time
+        })
+
 
     def modify_order(
         self, existing_order_id: Optional[str] = None,
